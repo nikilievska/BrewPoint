@@ -15,18 +15,49 @@ namespace BrewPoint.Services.Implementations
 
         public async Task PlaceOrderAsync(Order order)
         {
-            order.TotalPrice = CalculateTotalPrice(order.TotalPrice, order.SugarQuantity ?? 0);
+            order.TotalPrice = order.Items.Sum(item =>
+                CalculateTotalPrice(item.UnitPrice, item.Extras?.ToList() ?? new()) * item.Quantity
+            );
             await _orderRepo.PlaceOrder(order);
         }
 
         public async Task<IEnumerable<Order>> GetAllOrdersAsync()
         {
-            return await _orderRepo.GetAllOrdersAsync();
+            return await _orderRepo.GetAllOrders();
         }
 
-        public decimal CalculateTotalPrice(decimal basePrice, int sugarQuantity)
+        public async Task<IEnumerable<Order>> GetOrdersByUserIdAsync(string userId)
         {
-            return basePrice + (sugarQuantity * 0.10m); 
+            return await _orderRepo.GetOrdersByUserId(userId);
+        }
+
+        public async Task<bool> CancelOrderAsync(int orderId, string userId)
+        {
+            var order = await _orderRepo.GetOrderById(orderId);
+
+            if (order == null || order.UserId != userId || order.Status != OrderStatus.Pending)
+                return false;
+
+            await _orderRepo.DeleteOrder(orderId);
+            return true;
+        }
+
+        public async Task<bool> UpdateOrderStatusAsync(int orderId, OrderStatus newStatus)
+        {
+            var order = await _orderRepo.GetOrderById(orderId);
+
+            if (order == null)
+                return false;
+
+            order.Status = newStatus;
+            await _orderRepo.UpdateOrder(order);
+            return true;
+        }
+
+        public decimal CalculateTotalPrice(decimal basePrice, List<OrderItemIngredient> extras)
+        {
+            var extrasTotal = extras.Sum(e => e.PriceAtOrder);
+            return basePrice + extrasTotal;
         }
     }
 }

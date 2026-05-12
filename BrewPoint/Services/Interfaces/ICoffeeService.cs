@@ -6,5 +6,8 @@ namespace BrewPoint.Services.Interfaces
     {
         Task<IEnumerable<Coffee>> GetAllCoffeesAsync();
         Task<Coffee?> GetCoffeeByIdAsync(int id);
+        Task CreateCoffeeAsync(Coffee coffee);       
+        Task UpdateCoffeeAsync(Coffee coffee);       
+        Task DeleteCoffeeAsync(int id);
     }
 }

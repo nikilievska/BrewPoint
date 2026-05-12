@@ -22,5 +22,20 @@ namespace BrewPoint.Services.Implementations
         {
             return await _coffeeRepo.GetCoffeeById(id);
         }
+
+        public async Task CreateCoffeeAsync(Coffee coffee)
+        {
+            await _coffeeRepo.Create(coffee);
+        }
+
+        public async Task UpdateCoffeeAsync(Coffee coffee)
+        {
+            await _coffeeRepo.UpdateCoffee(coffee);
+        }
+
+        public async Task DeleteCoffeeAsync(int id)
+        {
+            await _coffeeRepo.Delete(id);
+        }
     }
 }

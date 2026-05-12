@@ -44,6 +44,20 @@ namespace BrewPoint.Repositories.Implementations
                 .ToListAsync();
         }
 
+        public async Task<Order?> GetOrderById(int orderId)
+        {
+            return await _context.Orders
+                .Include(o => o.Items)
+                    .ThenInclude(i => i.Extras)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+        }
+
+        public async Task UpdateOrder(Order order)
+        {
+            _context.Orders.Update(order);
+            await _context.SaveChangesAsync();
+        }
+
         public async Task DeleteOrder(int orderId)
         {
             var order = await _context.Orders.FindAsync(orderId);

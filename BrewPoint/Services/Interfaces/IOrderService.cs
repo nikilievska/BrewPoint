@@ -6,6 +6,9 @@ namespace BrewPoint.Services.Interfaces
     {
         Task PlaceOrderAsync(Order order);
         Task<IEnumerable<Order>> GetAllOrdersAsync();
-        decimal CalculateTotalPrice(decimal basePrice, int sugarQuantity);
+        Task<IEnumerable<Order>> GetOrdersByUserIdAsync(string userId);
+        Task<bool> CancelOrderAsync(int orderId, string userId);
+        Task<bool> UpdateOrderStatusAsync(int orderId, OrderStatus newStatus);
+        decimal CalculateTotalPrice(decimal basePrice, List<OrderItemIngredient> extras);
     }
 }
