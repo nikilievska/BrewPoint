@@ -2,6 +2,8 @@ using BrewPoint.Data;
 using BrewPoint.Models;
 using BrewPoint.Repositories.Implementations;
 using BrewPoint.Repositories.Interfaces;
+using BrewPoint.Services.Interfaces;
+using BrewPoint.Services.Implementations;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
@@ -28,6 +30,10 @@ builder.Services.AddAuthorization();
 // ── Repositories ───────────────────────────────────────────
 builder.Services.AddScoped<ICoffeeRepository, CoffeeRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+
+// ── Services ───────────────────────────────────────────────
+builder.Services.AddScoped<ICoffeeService, CoffeeService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 
 // ── Controllers + Razor Views ──────────────────────────────
 builder.Services.AddControllersWithViews();
