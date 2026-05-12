@@ -35,4 +35,9 @@ namespace BrewPoint.Controllers
             return NoContent();
         }
     }
+
+    public class UpdateOrderStatusRequest
+    {
+        public OrderStatus Status { get; set; }
+    }
 }
