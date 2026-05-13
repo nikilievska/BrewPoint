@@ -1,5 +1,6 @@
 using BrewPoint.Models;
 using BrewPoint.Services.Interfaces;
+using BrewPoint.DTOs.Responses;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BrewPoint.Controllers
@@ -19,7 +20,7 @@ namespace BrewPoint.Controllers
         public async Task<IActionResult> GetAllOrders()
         {
             var orders = await _orderService.GetAllOrdersAsync();
-            return Ok(orders);
+            return Ok(orders.Select(o => MapToResponse(o)));
         }
 
         [HttpPatch("orders/{id}/status")]
@@ -34,6 +35,32 @@ namespace BrewPoint.Controllers
 
             return NoContent();
         }
+
+        private static OrderResponse MapToResponse(Order order) => new OrderResponse
+        {
+            Id = order.Id,
+            UserId = order.UserId,
+            UserFullName = order.User?.FullName ?? string.Empty,
+            Status = order.Status,
+            CreatedAt = order.CreatedAt,
+            TotalPrice = order.TotalPrice,
+            Items = order.Items?.Select(i => new OrderItemResponse
+            {
+                Id = i.Id,
+                CoffeeId = i.CoffeeId,
+                CoffeeName = i.Coffee?.Name ?? string.Empty,
+                Quantity = i.Quantity,
+                UnitPrice = i.UnitPrice,
+                SugarType = i.SugarType,
+                SugarQuantity = i.SugarQuantity,
+                Extras = i.Extras?.Select(e => new ExtraIngredientResponse
+                {
+                    IngredientId = e.IngredientId,
+                    IngredientName = e.Ingredient?.Name ?? string.Empty,
+                    PriceAtOrder = e.PriceAtOrder
+                }).ToList() ?? new List<ExtraIngredientResponse>()
+            }).ToList() ?? new List<OrderItemResponse>()
+        };
     }
 
     public class UpdateOrderStatusRequest
