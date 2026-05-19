@@ -1,13 +1,16 @@
 using BrewPoint.Models;
-using BrewPoint.Services.Interfaces;
 using BrewPoint.DTOs.Requests;
 using BrewPoint.DTOs.Responses;
+using BrewPoint.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BrewPoint.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class OrderController : ControllerBase
     {
         private readonly IOrderService _orderService;
@@ -23,12 +26,16 @@ namespace BrewPoint.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized();
+
             if (request.Items == null || !request.Items.Any())
                 return BadRequest(new { message = "An order must contain at least one item." });
 
             var order = new Order
             {
-                UserId = request.UserId,
+                UserId = userId,
                 Items = request.Items.Select(i => new OrderItem
                 {
                     CoffeeId = i.CoffeeId,
@@ -43,24 +50,26 @@ namespace BrewPoint.Controllers
             };
 
             await _orderService.PlaceOrderAsync(order);
-            return CreatedAtAction(nameof(GetMyOrders), new { userId = order.UserId }, MapToResponse(order));
+            return CreatedAtAction(nameof(GetMyOrders), null, MapToResponse(order));
         }
 
-        [HttpGet("user/{userId}")]
-        public async Task<IActionResult> GetMyOrders(string userId)
+        [HttpGet("my-orders")]
+        public async Task<IActionResult> GetMyOrders()
         {
-            if (string.IsNullOrWhiteSpace(userId))
-                return BadRequest(new { message = "User ID is required." });
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized();
 
             var orders = await _orderService.GetOrdersByUserIdAsync(userId);
             return Ok(orders.Select(o => MapToResponse(o)));
         }
 
         [HttpDelete("{id}/cancel")]
-        public async Task<IActionResult> CancelOrder(int id, [FromQuery] string userId)
+        public async Task<IActionResult> CancelOrder(int id)
         {
-            if (string.IsNullOrWhiteSpace(userId))
-                return BadRequest(new { message = "User ID is required." });
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return Unauthorized();
 
             var success = await _orderService.CancelOrderAsync(id, userId);
             if (!success)

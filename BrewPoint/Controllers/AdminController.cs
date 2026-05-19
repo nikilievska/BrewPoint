@@ -1,12 +1,14 @@
 using BrewPoint.Models;
-using BrewPoint.Services.Interfaces;
 using BrewPoint.DTOs.Responses;
+using BrewPoint.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BrewPoint.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "Admin")]
     public class AdminController : ControllerBase
     {
         private readonly IOrderService _orderService;
