@@ -80,7 +80,8 @@ public class CoffeeControllerTests
             Name = "Cappuccino",
             Price = 3.00m,
             Description = "Frothy",
-            ImagePath = ""
+            ImagePath = "",
+            IngredientIds = new List<int> { 1, 2 }
         };
 
         // Act
@@ -89,10 +90,10 @@ public class CoffeeControllerTests
         // Assert
         var created = Assert.IsType<CreatedAtActionResult>(result);
         Assert.Equal(nameof(_sut.GetById), created.ActionName);
-        await _service.Received(1).CreateCoffeeAsync(Arg.Any<Coffee>());
+        await _service.Received(1).CreateCoffeeAsync(Arg.Any<Coffee>(), Arg.Any<List<int>>());
     }
 
-    // Update Test
+    // Update Tests
 
     [Fact]
     public async Task Update_WhenExists_ReturnsNoContent()
@@ -107,7 +108,8 @@ public class CoffeeControllerTests
             Name = "Updated Espresso",
             Price = 3.00m,
             Description = "Strong",
-            ImagePath = ""
+            ImagePath = "",
+            IngredientIds = new List<int> { 1 }
         };
 
         // Act
@@ -115,7 +117,7 @@ public class CoffeeControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _service.Received(1).UpdateCoffeeAsync(Arg.Any<Coffee>());
+        await _service.Received(1).UpdateCoffeeAsync(Arg.Any<Coffee>(), Arg.Any<List<int>>());
     }
 
     [Fact]
@@ -130,7 +132,8 @@ public class CoffeeControllerTests
             Name = "Ghost Coffee",
             Price = 3.00m,
             Description = "Does not exist",
-            ImagePath = ""
+            ImagePath = "",
+            IngredientIds = new List<int>()
         };
 
         // Act
@@ -138,14 +141,22 @@ public class CoffeeControllerTests
 
         // Assert
         Assert.IsType<NotFoundObjectResult>(result);
-        await _service.DidNotReceive().UpdateCoffeeAsync(Arg.Any<Coffee>());
+        await _service.DidNotReceive().UpdateCoffeeAsync(Arg.Any<Coffee>(), Arg.Any<List<int>>());
     }
 
     [Fact]
     public async Task Update_WhenIdMismatch_ReturnsBadRequest()
     {
         // Arrange
-        var request = new UpdateCoffeeRequest { Id = 2, Name = "Latte", Price = 3.50m, Description = "", ImagePath = "" };
+        var request = new UpdateCoffeeRequest
+        {
+            Id = 2,
+            Name = "Latte",
+            Price = 3.50m,
+            Description = "",
+            ImagePath = "",
+            IngredientIds = new List<int>()
+        };
 
         // Act
         var result = await _sut.Update(1, request);
@@ -154,7 +165,7 @@ public class CoffeeControllerTests
         Assert.IsType<BadRequestObjectResult>(result);
     }
 
-    // Delete Test
+    // Delete Tests
 
     [Fact]
     public async Task Delete_WhenExists_ReturnsNoContent()

@@ -8,12 +8,16 @@ namespace BrewPoint.Tests.Services;
 public class OrderServiceTests
 {
     private readonly IOrderRepository _repo;
+    private readonly ICoffeeRepository _coffeeRepo;
+    private readonly IIngredientRepository _ingredientRepo;
     private readonly OrderService _sut;
 
     public OrderServiceTests()
     {
         _repo = Substitute.For<IOrderRepository>();
-        _sut = new OrderService(_repo);
+        _coffeeRepo = Substitute.For<ICoffeeRepository>();
+        _ingredientRepo = Substitute.For<IIngredientRepository>();
+        _sut = new OrderService(_repo, _coffeeRepo, _ingredientRepo);
     }
 
     // GetAllOrdersAsync Test
@@ -64,7 +68,13 @@ public class OrderServiceTests
     [Fact]
     public async Task PlaceOrderAsync_CalculatesTotalPriceCorrectly()
     {
-        // Arrange 
+        // Arrange - coffee costs 3.00, one extra costs 0.50, quantity 2
+        var coffee = new Coffee { Id = 1, Name = "Espresso", Price = 3.00m, Description = "", ImagePath = "" };
+        var ingredient = new Ingredient { Id = 1, Name = "Extra Shot", Price = 0.50m };
+
+        _coffeeRepo.GetCoffeeById(1).Returns(coffee);
+        _ingredientRepo.GetIngredientById(1).Returns(ingredient);
+
         var order = new Order
         {
             UserId = "user-1",
@@ -74,10 +84,9 @@ public class OrderServiceTests
                 {
                     CoffeeId = 1,
                     Quantity = 2,
-                    UnitPrice = 3.00m,
                     Extras = new List<OrderItemIngredient>
                     {
-                        new() { PriceAtOrder = 0.50m }
+                        new() { IngredientId = 1 }
                     }
                 }
             }
@@ -86,7 +95,7 @@ public class OrderServiceTests
         // Act
         await _sut.PlaceOrderAsync(order);
 
-        // Assert 
+        // Assert - (3.00 + 0.50) * 2 = 7.00
         Assert.Equal(7.00m, order.TotalPrice);
         await _repo.Received(1).PlaceOrder(order);
     }
@@ -95,6 +104,9 @@ public class OrderServiceTests
     public async Task PlaceOrderAsync_NoExtras_CalculatesBasePriceOnly()
     {
         // Arrange
+        var coffee = new Coffee { Id = 1, Name = "Espresso", Price = 2.50m, Description = "", ImagePath = "" };
+        _coffeeRepo.GetCoffeeById(1).Returns(coffee);
+
         var order = new Order
         {
             UserId = "user-1",
@@ -104,7 +116,6 @@ public class OrderServiceTests
                 {
                     CoffeeId = 1,
                     Quantity = 3,
-                    UnitPrice = 2.50m,
                     Extras = new List<OrderItemIngredient>()
                 }
             }
@@ -113,7 +124,7 @@ public class OrderServiceTests
         // Act
         await _sut.PlaceOrderAsync(order);
 
-        // Assert 
+        // Assert - 2.50 * 3 = 7.50
         Assert.Equal(7.50m, order.TotalPrice);
     }
 
@@ -225,7 +236,7 @@ public class OrderServiceTests
         // Act
         var result = _sut.CalculateTotalPrice(3.00m, extras);
 
-        // Assert 
+        // Assert - 3.00 + 0.50 + 0.75 = 4.25
         Assert.Equal(4.25m, result);
     }
 
