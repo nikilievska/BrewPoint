@@ -1,0 +1,74 @@
+﻿@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="card p-4">
+            <h3 class="text-center mb-4 fw-bold" style="color: var(--brew-brown);">
+                <i class="bi bi-person-plus-fill"></i> Register
+            </h3>
+
+            <div id="errorMsg" class="alert alert-danger d-none"></div>
+            <div id="successMsg" class="alert alert-success d-none"></div>
+
+            <div class="mb-3">
+                <label class="form-label">Full Name</label>
+                <input type="text" id="fullName" class="form-control" placeholder="Jane Doe" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" id="email" class="form-control" placeholder="you@example.com" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input type="password" id="password" class="form-control" placeholder="Min. 6 characters" />
+            </div>
+            <button class="btn btn-brew w-100" onclick="register()">Create Account</button>
+
+            <p class="text-center mt-3 text-muted">
+                Already have an account? <a href="/Auth/Login">Login</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        async function register() {
+            const fullName = document.getElementById('fullName').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+            const successMsg = document.getElementById('successMsg');
+
+            errorMsg.classList.add('d-none');
+            successMsg.classList.add('d-none');
+
+            try {
+                const response = await fetch('/api/Auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fullName, email, password })
+                });
+
+                if (!response.ok) {
+                    errorMsg.textContent = 'Registration failed. Email may already be in use.';
+                    errorMsg.classList.remove('d-none');
+                    return;
+                }
+
+                const data = await response.json();
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('role', data.role);
+                localStorage.setItem('userId', data.userId);
+                localStorage.setItem('fullName', data.fullName);
+
+                window.location.href = '/Coffee';
+            } catch {
+                errorMsg.textContent = 'Something went wrong. Please try again.';
+                errorMsg.classList.remove('d-none');
+            }
+        }
+    </script>
+}

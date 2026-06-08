@@ -1,0 +1,157 @@
+﻿@{
+    ViewData["Title"] = "Add Coffee";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card p-4">
+            <h3 class="fw-bold mb-4" style="color: var(--brew-brown);">
+                <i class="bi bi-plus-circle"></i> Add New Coffee
+            </h3>
+
+            <div id="errorMsg" class="alert alert-danger d-none"></div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Name</label>
+                <input type="text" id="name" class="form-control" placeholder="e.g. Espresso" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Price ($)</label>
+                <input type="number" id="price" class="form-control" step="0.01" min="0.01" placeholder="e.g. 3.50" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Description</label>
+                <textarea id="description" class="form-control" rows="3" placeholder="Describe the coffee..."></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Extra Ingredients</label>
+                <div id="ingredientsList" class="border rounded p-3">
+                    <small class="text-muted">Loading ingredients...</small>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Image</label>
+                <input type="file" id="imageFile" class="form-control" accept=".jpg,.jpeg,.png,.webp" />
+                <div id="imagePreview" class="mt-2" style="display:none">
+                    <img id="previewImg" src="" style="width:100%; height:200px; object-fit:cover; border-radius:8px;" />
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-2">
+                <button class="btn btn-brew w-100" onclick="addCoffee()">
+                    <i class="bi bi-check-circle"></i> Add Coffee
+                </button>
+                <a href="/Admin/Coffees" class="btn btn-outline-secondary w-100">Cancel</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Preview image before upload
+        document.getElementById('imageFile').addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImg').src = e.target.result;
+                    document.getElementById('imagePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        async function loadIngredients() {
+            try {
+                const response = await fetch('/api/Ingredient');
+                if (!response.ok) throw new Error();
+                const ingredients = await response.json();
+
+                document.getElementById('ingredientsList').innerHTML = ingredients.map(i => `
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox"
+                               id="ing_${i.id}" value="${i.id}">
+                        <label class="form-check-label" for="ing_${i.id}">
+                            ${i.name}
+                            <span class="text-muted small">(+$${i.price.toFixed(2)})</span>
+                        </label>
+                    </div>
+                `).join('');
+            } catch {
+                document.getElementById('ingredientsList').innerHTML = '<small class="text-danger">Failed to load ingredients.</small>';
+            }
+        }
+
+        function getSelectedIngredients() {
+            return Array.from(document.querySelectorAll('.form-check-input:checked'))
+                        .map(el => parseInt(el.value));
+        }
+
+        async function addCoffee() {
+            const token = localStorage.getItem('token');
+            if (!token || localStorage.getItem('role') !== 'Admin') {
+                window.location.href = '/';
+                return;
+            }
+
+            const name        = document.getElementById('name').value.trim();
+            const price       = parseFloat(document.getElementById('price').value);
+            const description = document.getElementById('description').value.trim();
+            const imageFile   = document.getElementById('imageFile').files[0];
+            const errorMsg    = document.getElementById('errorMsg');
+
+            errorMsg.classList.add('d-none');
+
+            if (!name || !price) {
+                errorMsg.textContent = 'Name and price are required.';
+                errorMsg.classList.remove('d-none');
+                return;
+            }
+
+            try {
+                // Step 1 — upload image if provided
+                let imagePath = '';
+                if (imageFile) {
+                    const formData = new FormData();
+                    formData.append('file', imageFile);
+
+                    const uploadResponse = await fetch('/api/Coffee/upload-image', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    });
+
+                    if (!uploadResponse.ok) throw new Error('Image upload failed.');
+                    const uploadData = await uploadResponse.json();
+                    imagePath = uploadData.imagePath;
+                }
+
+                // Step 2 — create coffee with ingredients
+                const response = await fetch('/api/Coffee', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        name,
+                        price,
+                        description,
+                        imagePath,
+                        ingredientIds: getSelectedIngredients()
+                    })
+                });
+
+                if (!response.ok) throw new Error();
+                window.location.href = '/Admin/Coffees';
+            } catch (err) {
+                errorMsg.textContent = err.message || 'Failed to add coffee.';
+                errorMsg.classList.remove('d-none');
+            }
+        }
+
+        
+        loadIngredients();
+    </script>
+}

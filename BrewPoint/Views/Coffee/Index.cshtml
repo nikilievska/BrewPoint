@@ -1,0 +1,73 @@
+﻿@{
+    ViewData["Title"] = "Menu";
+}
+
+<h2 class="fw-bold mb-4" style="color: var(--brew-brown);">
+    <i class="bi bi-list-ul"></i> Our Menu
+</h2>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <input type="text" id="searchInput" class="form-control"
+               placeholder="Search coffees..." oninput="filterCoffees()" />
+    </div>
+</div>
+
+<div id="coffeeGrid" class="row g-4"></div>
+<div id="loadingMsg" class="text-center text-muted">Loading menu...</div>
+<div id="errorMsg" class="alert alert-danger d-none"></div>
+
+@section Scripts {
+    <script>
+        let allCoffees = [];
+
+        async function loadCoffees() {
+            try {
+                const response = await fetch('/api/Coffee');
+                if (!response.ok) throw new Error();
+                allCoffees = await response.json();
+                document.getElementById('loadingMsg').style.display = 'none';
+                renderCoffees(allCoffees);
+            } catch {
+                document.getElementById('loadingMsg').style.display = 'none';
+                document.getElementById('errorMsg').classList.remove('d-none');
+                document.getElementById('errorMsg').textContent = 'Failed to load menu.';
+            }
+        }
+
+        function filterCoffees() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allCoffees.filter(c => c.name.toLowerCase().includes(query));
+            renderCoffees(filtered);
+        }
+
+        function renderCoffees(coffees) {
+            const grid = document.getElementById('coffeeGrid');
+            if (coffees.length === 0) {
+                grid.innerHTML = '<p class="text-muted">No coffees found.</p>';
+                return;
+            }
+            grid.innerHTML = coffees.map(c => `
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <img src="${c.imagePath || '/images/default-coffee.jpg'}"
+                             class="card-img-top" style="height:200px; object-fit:cover;"
+                             onerror="this.src='/images/default-coffee.jpg'" />
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title fw-bold">${c.name}</h5>
+                            <p class="card-text text-muted small">${c.description || ''}</p>
+                            <div class="mt-auto d-flex justify-content-between align-items-center">
+                                <span class="fw-bold" style="color: var(--brew-brown);">$${c.price.toFixed(2)}</span>
+                                <a href="/Coffee/Detail/${c.id}" class="btn btn-brew btn-sm">
+                                    <i class="bi bi-cart-plus"></i> Order
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        loadCoffees();
+    </script>
+}
