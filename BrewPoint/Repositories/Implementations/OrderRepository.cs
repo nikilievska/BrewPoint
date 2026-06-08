@@ -22,26 +22,27 @@ namespace BrewPoint.Repositories.Implementations
 
         public async Task<IEnumerable<Order>> GetAllOrders()
         {
-            return await _context.Orders
-                .Include(o => o.Items)
-                    .ThenInclude(i => i.Coffee)
-                .Include(o => o.Items)
-                    .ThenInclude(i => i.Extras)
-                        .ThenInclude(e => e.Ingredient)
-                .Include(o => o.User)
-                .ToListAsync();
+                return await _context.Orders
+           .Include(o => o.User)
+           .Include(o => o.Items)
+               .ThenInclude(i => i.Coffee)
+           .Include(o => o.Items)
+               .ThenInclude(i => i.Extras)
+                   .ThenInclude(e => e.Ingredient)  
+           .ToListAsync();
         }
 
         public async Task<IEnumerable<Order>> GetOrdersByUserId(string userId)
         {
-            return await _context.Orders
-                .Include(o => o.Items)
-                    .ThenInclude(i => i.Coffee)
-                .Include(o => o.Items)
-                    .ThenInclude(i => i.Extras)
-                        .ThenInclude(e => e.Ingredient)
-                .Where(o => o.UserId == userId)
-                .ToListAsync();
+                    return await _context.Orders
+             .Include(o => o.User)
+             .Include(o => o.Items)
+                 .ThenInclude(i => i.Coffee)
+             .Include(o => o.Items)
+                 .ThenInclude(i => i.Extras)
+                     .ThenInclude(e => e.Ingredient)  
+             .Where(o => o.UserId == userId)
+             .ToListAsync();
         }
 
         public async Task<Order?> GetOrderById(int orderId)

@@ -1,0 +1,136 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — BrewPoint</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet" />
+    <style>
+            :root {
+                --brew-brown: #4a2c2a;
+                --brew-light: #f5f0eb;
+                --brew-accent: #c8a97e;
+            }
+
+            body {
+                background-color: var(--brew-light);
+            }
+
+            .navbar {
+                background-color: var(--brew-brown) !important;
+            }
+
+            .navbar-brand, .nav-link {
+                color: var(--brew-accent) !important;
+            }
+
+                .nav-link:hover {
+                    color: white !important;
+                }
+
+            .btn-brew {
+                background-color: var(--brew-brown);
+                color: white;
+                border: none;
+            }
+
+                .btn-brew:hover {
+                    background-color: var(--brew-accent);
+                    color: var(--brew-brown);
+                }
+
+            .card {
+                border: none;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4" href="/" id="brandLink">
+                <i class="bi bi-cup-hot-fill"></i> BrewPoint
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item" id="menuLink">
+                        <a class="nav-link" href="/Coffee">Menu</a>
+                    </li>
+                    <li class="nav-item" id="myOrdersLink" style="display:none">
+                        <a class="nav-link" href="/Order/MyOrders">My Orders</a>
+                    </li>
+                    <li class="nav-item" id="adminLink" style="display:none">
+                        <a class="nav-link" href="/Admin/Orders">
+                            <i class="bi bi-speedometer2"></i> Admin Orders
+                        </a>
+                    </li>
+                    <li class="nav-item" id="adminCoffeesLink" style="display:none">
+                        <a class="nav-link" href="/Admin/Coffees">
+                            <i class="bi bi-cup-hot-fill"></i> Manage Coffees
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item" id="authLinks">
+                        <a class="nav-link" href="/Auth/Login">Login</a>
+                        <a class="nav-link" href="/Auth/Register">Register</a>
+                    </li>
+                    <li class="nav-item" id="userInfo" style="display:none">
+                        <span class="nav-link text-white" id="userNameDisplay"></span>
+                    </li>
+                    <li class="nav-item" id="logoutLink" style="display:none">
+                        <a class="nav-link" href="#" onclick="logout()">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-4">
+        @RenderBody()
+    </main>
+
+    <footer class="text-center py-3 mt-4" style="background-color: var(--brew-brown); color: var(--brew-accent);">
+        <small>&copy; 2026 BrewPoint — Online Coffee Ordering</small>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function getToken() { return localStorage.getItem('token'); }
+        function getRole() { return localStorage.getItem('role'); }
+        function getUserName() { return localStorage.getItem('fullName'); }
+
+        function logout() {
+        localStorage.clear();
+        window.location.href = '/';
+        }
+
+        function updateNavbar() {
+        const token = getToken();
+        const role = getRole();
+
+        if (token) {
+        document.getElementById('authLinks').style.display = 'none';
+        document.getElementById('logoutLink').style.display = 'block';
+        document.getElementById('userInfo').style.display = 'block';
+        document.getElementById('userNameDisplay').textContent = getUserName();
+
+        if (role === 'Admin') {
+        document.getElementById('brandLink').href = '/Admin/Coffees'; // ← add this
+        document.getElementById('menuLink').style.display = 'none';
+        document.getElementById('adminLink').style.display = 'block';
+        document.getElementById('adminCoffeesLink').style.display = 'block';
+        } else {
+        document.getElementById('myOrdersLink').style.display = 'block';
+        }
+        }
+        }
+        updateNavbar();
+    </script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

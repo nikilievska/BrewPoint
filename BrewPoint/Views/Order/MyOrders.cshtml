@@ -1,0 +1,105 @@
+﻿@{
+    ViewData["Title"] = "My Orders";
+}
+
+<h2 class="fw-bold mb-4" style="color: var(--brew-brown);">
+    <i class="bi bi-clock-history"></i> My Orders
+</h2>
+
+<div id="loadingMsg" class="text-center text-muted">Loading orders...</div>
+<div id="errorMsg" class="alert alert-danger d-none"></div>
+<div id="noOrders" class="alert alert-info d-none">You haven't placed any orders yet.</div>
+<div id="ordersList"></div>
+
+@section Scripts {
+    <script>
+        async function loadOrders() {
+            const token = localStorage.getItem('token');
+            if (!token) { window.location.href = '/Auth/Login'; return; }
+
+            try {
+                const response = await fetch('/api/Order/my-orders', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error();
+                const orders = await response.json();
+                document.getElementById('loadingMsg').style.display = 'none';
+
+                if (orders.length === 0) {
+                    document.getElementById('noOrders').classList.remove('d-none');
+                    return;
+                }
+                renderOrders(orders);
+            } catch {
+                document.getElementById('loadingMsg').style.display = 'none';
+                document.getElementById('errorMsg').textContent = 'Failed to load orders.';
+                document.getElementById('errorMsg').classList.remove('d-none');
+            }
+        }
+
+        function statusBadge(status) {
+            const map = {
+                0: ['Pending', 'warning'],
+                1: ['Preparing', 'info'],
+                2: ['Ready', 'primary'],
+                3: ['Completed', 'success'],
+                4: ['Cancelled', 'danger']
+            };
+            const [label, color] = map[status] || ['Unknown', 'secondary'];
+            return `<span class="badge bg-${color}">${label}</span>`;
+        }
+
+        function renderOrders(orders) {
+            document.getElementById('ordersList').innerHTML = orders.map(o => `
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">Order #${o.id}</span>
+                        <div>
+                            ${statusBadge(o.status)}
+                            <small class="text-muted ms-2">${new Date(o.createdAt).toLocaleDateString()}</small>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        ${o.items.map(i => `
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>${i.coffeeName} x${i.quantity}
+                                    ${i.sugarType ? `<small class="text-muted">(${i.sugarType}, ${i.sugarQuantity} spoons)</small>` : ''}
+                                    ${i.extras?.length ? `<small class="text-muted">+ ${i.extras.map(e => e.ingredientName).join(', ')}</small>` : ''}
+                                </span>
+                                <span>$${(i.unitPrice * i.quantity).toFixed(2)}</span>
+                            </div>
+                        `).join('')}
+                        <hr/>
+                        <div class="d-flex justify-content-between fw-bold">
+                            <span>Total</span>
+                            <span style="color: var(--brew-brown);">$${o.totalPrice.toFixed(2)}</span>
+                        </div>
+                        ${o.status === 0 ? `
+                            <button class="btn btn-outline-danger btn-sm mt-2"
+                                    onclick="cancelOrder(${o.id})">
+                                <i class="bi bi-x-circle"></i> Cancel Order
+                            </button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function cancelOrder(id) {
+            const token = localStorage.getItem('token');
+            if (!confirm('Are you sure you want to cancel this order?')) return;
+
+            try {
+                const response = await fetch(`/api/Order/${id}/cancel`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error();
+                loadOrders();
+            } catch {
+                alert('Could not cancel order.');
+            }
+        }
+
+        loadOrders();
+    </script>
+}

@@ -1,0 +1,142 @@
+﻿@{
+    ViewData["Title"] = "Coffee Detail";
+}
+
+<div id="loadingMsg" class="text-center text-muted">Loading...</div>
+<div id="errorMsg" class="alert alert-danger d-none"></div>
+<div id="successMsg" class="alert alert-success d-none"></div>
+<div id="coffeeDetail" style="display:none"></div>
+
+@section Scripts {
+    <script>
+        const coffeeId = window.location.pathname.split('/').pop();
+
+        async function loadCoffee() {
+            try {
+                const response = await fetch(`/api/Coffee/${coffeeId}`);
+                if (!response.ok) throw new Error();
+                const coffee = await response.json();
+                document.getElementById('loadingMsg').style.display = 'none';
+                renderDetail(coffee);
+            } catch {
+                document.getElementById('loadingMsg').style.display = 'none';
+                document.getElementById('errorMsg').textContent = 'Coffee not found.';
+                document.getElementById('errorMsg').classList.remove('d-none');
+            }
+        }
+
+        function renderDetail(coffee) {
+            const extrasHtml = coffee.ingredients?.map(ing => `
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox"
+                           id="ing_${ing.id}" value="${ing.id}" data-price="${ing.price}" onchange="updateTotal(${coffee.price})">
+                    <label class="form-check-label" for="ing_${ing.id}">
+                        ${ing.name} <span class="text-muted small">(+$${ing.price.toFixed(2)})</span>
+                    </label>
+                </div>
+            `).join('') || '<p class="text-muted">No extra ingredients available.</p>';
+
+            document.getElementById('coffeeDetail').innerHTML = `
+                <div class="row">
+                    <div class="col-md-5">
+                        <img src="${coffee.imagePath || '/images/default-coffee.jpg'}"
+                             class="img-fluid rounded shadow"
+                             onerror="this.src='/images/default-coffee.jpg'" />
+                    </div>
+                    <div class="col-md-7">
+                        <h2 class="fw-bold" style="color: var(--brew-brown);">${coffee.name}</h2>
+                        <p class="text-muted">${coffee.description || ''}</p>
+                        <h4 class="fw-bold" style="color: var(--brew-accent);" id="totalPrice">
+                            $${coffee.price.toFixed(2)}
+                        </h4>
+                        <hr/>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Quantity</label>
+                                <input type="number" id="quantity" class="form-control"
+                                       value="1" min="1" max="10" onchange="updateTotal(${coffee.price})"/>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Sugar Type</label>
+                                <select id="sugarType" class="form-select">
+                                    <option value="">None</option>
+                                    <option value="white">White</option>
+                                    <option value="brown">Brown</option>
+                                    <option value="cane">Cane</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Sugar Quantity (spoons)</label>
+                            <input type="number" id="sugarQuantity" class="form-control"
+                                   value="0" min="0" max="5" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Extra Ingredients</label>
+                            ${extrasHtml}
+                        </div>
+                        <button class="btn btn-brew w-100 mt-2" onclick="placeOrder(${coffee.id}, ${coffee.price})">
+                            <i class="bi bi-cart-check"></i> Place Order
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('coffeeDetail').style.display = 'block';
+        }
+
+        function updateTotal(basePrice) {
+            const quantity = parseInt(document.getElementById('quantity').value) || 1;
+            const extras = document.querySelectorAll('.form-check-input:checked');
+            const extrasTotal = Array.from(extras).reduce((sum, el) => sum + parseFloat(el.dataset.price), 0);
+            const total = (basePrice + extrasTotal) * quantity;
+            document.getElementById('totalPrice').textContent = `$${total.toFixed(2)}`;
+        }
+
+        async function placeOrder(coffeeId, basePrice) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/Auth/Login';
+                return;
+            }
+
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const sugarType = document.getElementById('sugarType').value;
+            const sugarQuantity = parseInt(document.getElementById('sugarQuantity').value);
+            const extras = Array.from(document.querySelectorAll('.form-check-input:checked'))
+                                .map(el => parseInt(el.value));
+
+            const order = {
+                userId: localStorage.getItem('userId'),
+                items: [{
+                    coffeeId,
+                    quantity,
+                    sugarType: sugarType || null,
+                    sugarQuantity: sugarQuantity || null,
+                    extraIngredientIds: extras
+                }]
+            };
+
+            try {
+                const response = await fetch('/api/Order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(order)
+                });
+
+                if (!response.ok) throw new Error();
+
+                document.getElementById('successMsg').textContent = 'Order placed successfully!';
+                document.getElementById('successMsg').classList.remove('d-none');
+                setTimeout(() => window.location.href = '/Order/MyOrders', 1500);
+            } catch {
+                document.getElementById('errorMsg').textContent = 'Failed to place order. Please try again.';
+                document.getElementById('errorMsg').classList.remove('d-none');
+            }
+        }
+
+        loadCoffee();
+    </script>
+}

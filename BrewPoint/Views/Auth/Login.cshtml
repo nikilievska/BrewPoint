@@ -1,0 +1,64 @@
+﻿@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="card p-4">
+            <h3 class="text-center mb-4 fw-bold" style="color: var(--brew-brown);">
+                <i class="bi bi-cup-hot-fill"></i> Login
+            </h3>
+
+            <div id="errorMsg" class="alert alert-danger d-none"></div>
+
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" id="email" class="form-control" placeholder="you@example.com" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input type="password" id="password" class="form-control" placeholder="••••••" />
+            </div>
+            <button class="btn btn-brew w-100" onclick="login()">Login</button>
+
+            <p class="text-center mt-3 text-muted">
+                Don't have an account? <a href="/Auth/Register">Register</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+
+            try {
+                const response = await fetch('/api/Auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (!response.ok) {
+                    errorMsg.textContent = 'Invalid email or password.';
+                    errorMsg.classList.remove('d-none');
+                    return;
+                }
+
+                const data = await response.json();
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('role', data.role);
+                localStorage.setItem('userId', data.userId);
+                localStorage.setItem('fullName', data.fullName);
+
+                window.location.href = data.role === 'Admin' ? '/Admin/Coffees' : '/Coffee';
+            } catch {
+                errorMsg.textContent = 'Something went wrong. Please try again.';
+                errorMsg.classList.remove('d-none');
+            }
+        }
+    </script>
+}
