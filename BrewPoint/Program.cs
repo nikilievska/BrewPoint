@@ -13,6 +13,16 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Convert Render's PostgreSQL URL to Npgsql connection string
+var databaseUrl = builder.Configuration.GetConnectionString("DefaultConnection");
+if (databaseUrl != null && databaseUrl.StartsWith("postgresql://"))
+{
+    var uri = new Uri(databaseUrl);
+    var userInfo = uri.UserInfo.Split(':');
+    databaseUrl = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+    builder.Configuration["ConnectionStrings:DefaultConnection"] = databaseUrl;
+}
+
 // Database
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
