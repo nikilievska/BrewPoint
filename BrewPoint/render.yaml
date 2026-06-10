@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: brewpoint-api
+    runtime: docker
+    dockerfilePath: ./BrewPoint/Dockerfile
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        fromDatabase:
+          name: brewpoint-db
+          property: connectionString
+      - key: Jwt__Key
+        value: BrewPointSuperSecretKey1234567890!@#
+      - key: Jwt__Issuer
+        value: BrewPoint
+      - key: Jwt__Audience
+        value: BrewPointUsers
+
+databases:
+  - name: brewpoint-db
+    plan: free
